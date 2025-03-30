@@ -1,0 +1,311 @@
+﻿@model UniqueBLifeScience.Models.SalesFormViewModel
+@{
+    ViewData["Title"] = "CreateSales";
+    var products = ViewBag.Products as List<UniqueBLifeScience.Models.Products> ?? new List<UniqueBLifeScience.Models.Products>();
+    var customers = ViewBag.Customers as List<UniqueBLifeScience.Models.Customers> ?? new List<UniqueBLifeScience.Models.Customers>();
+}
+
+<h1>Create Sales</h1>
+
+<form asp-action="CreateSales" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <label asp-for="CustomerName" class="control-label"></label><br />
+        <select class="customer-select form-control select2-dropdown" name="CustomerName" class="form-control">
+            <option value="">Select Customer</option>
+            @foreach (var customer in customers)
+            {
+                <option value="@customer.CustomerName#@customer.CustomerID">@customer.CustomerName</option>
+            }
+        </select>
+        <span asp-validation-for="CustomerName" class="text-danger"></span>
+    </div>
+    <input type="hidden" asp-for="CustomerID" class="form-control" />
+
+    <div class="form-group">
+        <label asp-for="Address" class="control-label"></label>
+        <input asp-for="Address" class="form-control" />
+        <span asp-validation-for="Address" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="GSTNumber" class="control-label"></label>
+        <input asp-for="GSTNumber" class="form-control" />
+        <span asp-validation-for="GSTNumber" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="PhoneNumber" class="control-label"></label>
+        <input asp-for="PhoneNumber" class="form-control" />
+        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DLNumber" class="control-label"></label>
+        <input asp-for="DLNumber" class="form-control" />
+        <span asp-validation-for="DLNumber" class="text-danger"></span>
+    </div>
+
+    <h2>Stock Sub Entries</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th>HSN Code</th>
+                <th>Batch</th>
+                <th>MRP</th>
+                <th>Rate</th>
+                <th>GST</th>
+                <th>Quantity</th>
+                <th>Manufacturing Date</th>
+                <th>Expiry Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="SalesSubTable">
+            <tr>
+                <td>
+                    <select name="SalesSub[0].ProductName" class="form-control product-select" onchange="fetchProductDetails(this, 0)">
+                        <option value="">Select Product</option>
+                        @foreach (var product in ViewBag.Products)
+                        {
+                            <option value="@product.ProductName#@product.ProductID">@product.ProductName#@product.Batch</option>
+                        }
+                    </select>
+                </td>
+                <input type="hidden" name="SalesSub[0].ProductID" class="form-control" />
+                <td><input name="SalesSub[0].HSNCode" class="form-control" /></td>
+                <td><input name="SalesSub[0].Batch" class="form-control" /></td>
+                <td><input name="SalesSub[0].MRP" class="form-control"/></td>
+                <td><input name="SalesSub[0].Rate" class="form-control" oninput="updateTotals()" /></td>
+                <td><input name="SalesSub[0].GST" class="form-control" oninput="updateTotals()" /></td>
+                <td><input name="SalesSub[0].Quantity" class="form-control" oninput="updateTotals()" /></td>
+                <td><input name="SalesSub[0].SalesDate" type="date" class="form-control" /></td>
+                <td><input name="SalesSub[0].ExpiryDate" type="date" class="form-control" /></td>
+                <input type="hidden" name="SalesSub[0].Packing" class="form-control" />
+                <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+            </tr>
+        </tbody>
+    </table>
+    <button type="button" class="btn btn-primary" onclick="addRow()">Add Stock Sub</button>
+    <br /><br />
+    <div class="form-group">
+        <label>Sales GST</label>
+        <input id="SalesGST" name="SalesGST" class="form-control" readonly />
+    </div>
+    <div class="form-group">
+        <label>Discount</label>
+        <input id="Discount" name="Discount" class="form-control"  value="0"/>
+    </div>
+
+    <div class="form-group">
+        <label>Total</label>
+        <input id="Total" name="Total" class="form-control" readonly />
+    </div>
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="@Url.Action("Sales", "Home")" class="btn btn-secondary">Back to Sales</a>
+</form>
+
+@section Scripts {
+    <script>
+        let rowIndex = 1;
+
+        $(document).ready(function () {
+            $('.customer-select').select2({
+                width: '100%' 
+            });
+            $('.product-select').select2({
+                width: '100%' 
+            });
+
+            $('.customer-select').on('change', function () {
+                var selectedValue = $(this).val();
+                if (selectedValue) {
+                    var customerId = selectedValue.split('#')[1]; 
+                    fetchCustomerDetails(customerId);
+                }
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            setDefaultDates();
+        });
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]').forEach((input) => {
+                if (!input.value) {
+                    input.value = today;
+                }
+            });
+        }
+        function addRow() {
+            const table = document.getElementById('SalesSubTable');
+            const newRow = table.insertRow();
+            const today = new Date().toISOString().split('T')[0];
+            newRow.innerHTML = `
+                        <td>
+                                <select name="SalesSub[${rowIndex}].ProductName" class="form-control add-product-select" onchange="fetchProductDetails(this, ${rowIndex})">
+                            <option value="">Select Product</option>
+        @foreach (var product in ViewBag.Products)
+                            {
+                                <option value="@product.ProductName#@product.ProductID">@product.ProductName#@product.Batch</option>
+                            }
+                        </select>
+                        </td>
+                                <input type="hidden" name="SalesSub[${rowIndex}].ProductID" class="form-control" />                        
+                                                <td><input name="SalesSub[${rowIndex}].HSNCode" class="form-control" /></td>
+                                        <td><input name="SalesSub[${rowIndex}].Batch" class="form-control" /></td>
+                                <td><input name="SalesSub[${rowIndex}].MRP" class="form-control" /></td>
+                                <td><input name="SalesSub[${rowIndex}].Rate" class="form-control" oninput="updateTotals()" /></td>
+                        <td><input name="SalesSub[${rowIndex}].GST" class="form-control" oninput="updateTotals()" /></td>
+                        <td><input name="SalesSub[${rowIndex}].Quantity" class="form-control" oninput="updateTotals()" /></td>
+                                <td><input name="SalesSub[${rowIndex}].SalesDate" type="date" class="form-control" value="${today}" /></td>
+                                <td><input name="SalesSub[${rowIndex}].ExpiryDate" type="date" class="form-control" value="${today}" /></td>
+                                <input type="hidden" name="SalesSub[${rowIndex}].Packing" class="form-control" />                        
+                                <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+                    `;
+            rowIndex++;
+            updateTotals();
+
+            $('.add-product-select').select2({
+                width: '100%'
+            });
+        }
+
+        function fetchCustomerDetails(customerId) {
+            $.ajax({
+                url: '/Home/GetCustomerDetails',
+                type: 'GET',
+                data: { customerId: customerId },
+                success: function (data) {
+                    if (data) {
+                        $('input[name="CustomerID"]').val(data.customerID);
+                        $('input[name="Address"]').val(data.address);
+                        $('input[name="GSTNumber"]').val(data.gstNumber);
+                        $('input[name="PhoneNumber"]').val(data.phoneNumber);
+                        $('input[name="DLNumber"]').val(data.dlNumber);
+                    } else {
+                        console.error('Customer details not found');
+                    }
+                },
+                error: function (error) {
+                    console.error('Error fetching customer details:', error);
+                }
+            });
+        }
+
+        function removeRow(button) {
+            const row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            updateTotals();
+        }
+
+        function fetchProductDetails(select, index) {
+            const value = select.value;
+            if (value) {
+                const [productName, productID] = value.split('#');
+                if (productID) {
+                    fetch(`/Home/GetProductDetails?productID=${productID}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data) {
+                                document.querySelector(`input[name="SalesSub[${index}].ProductID"]`).value = data.productID;
+                                document.querySelector(`input[name="SalesSub[${index}].HSNCode"]`).value = data.hsnCode;
+                                document.querySelector(`input[name="SalesSub[${index}].Batch"]`).value = data.batch;
+                                document.querySelector(`input[name="SalesSub[${index}].MRP"]`).value = data.mrp;
+                                document.querySelector(`input[name="SalesSub[${index}].Rate"]`).value = data.rate;
+                                document.querySelector(`input[name="SalesSub[${index}].GST"]`).value = data.gst;
+                                document.querySelector(`input[name="SalesSub[${index}].Packing"]`).value = data.packing;
+
+                                // Fetch the product quantity and set it as the value and max for the quantity input
+                                fetch(`/Home/GetProductQuantity?productID=${productID}`)
+                                    .then(response => response.json())
+                                    .then(quantity => {
+                                        if (quantity !== null) {
+                                            const quantityInput = document.querySelector(`input[name="SalesSub[${index}].Quantity"]`);
+                                            quantityInput.value = quantity;
+                                            quantityInput.max = quantity;
+
+                                            // Add event listener to handle input changes
+                                            quantityInput.addEventListener('input', function () {
+                                                if (parseInt(this.value) > quantity) {
+                                                    this.value = 0;
+                                                    alert(`Maximum quantity available is ${quantity}`);
+                                                }
+                                                updateTotals();
+                                            });
+
+                                            updateTotals();
+                                        } else {
+                                            console.error('Product quantity not found');
+                                        }
+                                    })
+                                    .catch(error => console.error('Error fetching product quantity:', error));
+                            } else {
+                                console.error('Product details not found');
+                            }
+                        })
+                        .catch(error => console.error('Error fetching product details:', error));
+                }
+            }
+        }
+
+        function getProductStockQantity(productID) {
+                        var productID = document.querySelector(`input[name="SalesSub[${index}].ProductID"]`).value;
+            fetch(`/Home/GetProductQuantity?productID=${productID}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data) {
+                                return data.quantity;
+                            } else {
+                                console.error('Product details not found');
+                            }
+                        })
+                        .catch(error => console.error('Error fetching product details:', error));
+        }
+        
+
+        function updateTotals() {
+            let totalGST = 0;
+            let totalRate = 0;
+
+            document.querySelectorAll('input[name^="SalesSub"][name$=".Rate"]').forEach((input, index) => {
+                var productPrice = parseFloat(input.value) || 0;
+                var gstInput = document.querySelector(`input[name="SalesSub[${index}].GST"]`);
+                var gstPercentage = parseFloat(gstInput.value) || 0;
+                var quantityInput = document.querySelector(`input[name="SalesSub[${index}].Quantity"]`);
+                var quantity = parseFloat(quantityInput.value) || 1; 
+
+                var totalProductPrice = productPrice * quantity;
+                var gstAmount = (totalProductPrice * gstPercentage) / 100;
+
+                totalGST += gstAmount;
+                totalRate += totalProductPrice;
+            });
+
+            let totalRateWithGST = totalRate + totalGST;
+            let totalRateWithGSTInt = Math.round(totalRateWithGST);
+
+            document.getElementById('SalesGST').value = totalGST.toFixed(1);
+            document.getElementById('Total').value = totalRateWithGSTInt;
+        }
+
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery.validate/1.19.1/jquery.validate.min.js"></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery.validate.unobtrusive/3.2.11/jquery.validate.unobtrusive.min.js"></script>
+}
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 38px; /* Match the height of the input boxes */
+        border: 1px solid #ced4da; /* Match the border of the input boxes */
+        border-radius: 0.25rem; /* Match the border radius of the input boxes */
+    }
+
+    .select2-container {
+        width: 100% !important; /* Ensure the container takes the full width */
+    }
+
+    .select2-dropdown {
+        width: auto !important; /* Ensure the dropdown adjusts to the content */
+    }
+</style>
+

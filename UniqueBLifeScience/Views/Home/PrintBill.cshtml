@@ -1,0 +1,198 @@
+﻿    @model UniqueBLifeScience.Models.PrintBillViewModel
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice</title>
+    <style>
+        body * {
+            visibility: hidden;
+        }
+
+        #printableArea, #printableArea * {
+            visibility: visible;
+        }
+
+        #printableArea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+
+        table {
+            width: 85%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 2px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .nowrap {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="printableArea">
+        <center><h3>E-Invoice</h3></center>
+        
+        <table>
+            <thead>
+                <tr>
+                    <td colspan="2">
+                        <img src="~/image/UNIQ B LOGO-01.png" alt="Logo" style="width: 150px; height: 150px;" />
+                    </td>
+                    <td colspan="6">
+                            <div>
+                                <p><b>@Model.CompanyData.MyCompanyName</b></p>
+                                <p>Address: @Model.CompanyData.Address</p>
+                                <p>GST Number: @Model.CompanyData.GSTNumber</p>
+                                <p>Phone Number: @Model.CompanyData.PhoneNumber</p>
+                                <p>DL Number: @Model.CompanyData.DLNumber</p>
+                            </div>
+                            </td>
+                    <td colspan="7">
+                            <div >
+                                <p><b>Invoice Number: @Model.Sales.GenerateInvoiceNumber()</b></p>
+                                <p>Customer Name: @Model.Sales.CustomerName</p>
+                                <p>GST Number: @Model.Sales.GSTNumber</p>
+                                <p>Phone Number: @Model.Sales.PhoneNumber</p>
+                                <p>DL Number: @Model.Sales.DLNumber</p>
+                            </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>SL.No</th>
+                    <th>I.Name</th>
+                    <th>Pack</th>
+                    <th>Manu</th>
+                    <th>Batch</th>
+                    <th>Ex.Dt</th>
+                    <th>MRP</th>
+                    <th>Quan</th>
+                    <th>Rate</th>
+                    @if (Model.Sales.GSTNumber.StartsWith("33"))
+                    {
+                        <th>CGST</th>
+                        <th>SGST</th>
+                    }
+                    else
+                    {
+                        <th>IGST</th>
+                    }
+                    <th>Amt</th>
+                    <th>HSN</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var serialNumber = 1;
+                    var salesGST = 0.0;
+                }
+                @foreach (var subItem in Model.Sales.SalesSub)
+                {
+                    var cgst = 0.0;
+                    var sgst = 0.0;
+                    var igst = 0.0;
+                    var gstAmount = 0.0;
+                    var amount = 0.0;
+                    if (Model.Sales.GSTNumber.StartsWith("33"))
+                    {
+                        cgst = subItem.GST / 2;
+                        cgst = Math.Round(cgst, 2);
+                        sgst = subItem.GST / 2;
+                        sgst = Math.Round(sgst, 2);
+                        gstAmount = subItem.Rate * (sgst / 100);
+                        gstAmount = Math.Round(gstAmount, 2);
+                        salesGST = subItem.Quantity * gstAmount;
+                        amount = subItem.Rate + gstAmount*2;
+                        amount = Math.Round(amount, 2);
+                    }
+                    else
+                    {
+                        igst = subItem.GST;
+                        gstAmount = subItem.Rate * (igst / 100);
+                        gstAmount = Math.Round(gstAmount, 2);
+                        salesGST = subItem.Quantity * gstAmount;
+                        amount = subItem.Rate + gstAmount;
+                        amount = Math.Round(amount, 2);
+                    }
+                    <tr>
+                        <td>@serialNumber</td>
+                        <td>@subItem.ProductName</td>
+                        <td>@subItem.Packing</td>
+                        @foreach (var companyName in Model.CompanyNames)
+                        {
+                            <td>@companyName</td>
+                        }
+                        <td>@subItem.Batch</td>
+                        <td class="nowrap">@subItem.ExpiryDate.ToString("dd-MM-yyyy")</td>
+                        <td>@subItem.MRP</td>
+                        <td>@subItem.Quantity</td>
+                        <td>@subItem.Rate</td>
+                        @if (Model.Sales.GSTNumber.StartsWith("33"))
+                        {
+                        <td>@gstAmount</td>
+                        <td>@gstAmount</td>
+                        }
+                        else{
+                            <td>@gstAmount</td>
+                        }
+                        <td>@amount</td>
+                        <td>@subItem.HSNCode</td>
+                    </tr>
+                    serialNumber++;
+                }
+                <tr>
+                    <td colspan="9">Total</td>
+                    @if (Model.Sales.GSTNumber.StartsWith("33"))
+                    
+                    {
+                        <td>@salesGST</td>
+                        <td>@salesGST</td>
+                    }
+                    else
+                    {
+                        <td>@salesGST</td>
+                    }
+                    <td>@Model.Sales.Total</td>
+                    <td colspan="1"></td>
+                    
+                </tr>
+            </tbody>
+        </table>
+        <br />
+        <br />
+        <p>Sales GST: @Math.Round((decimal)@Model.Sales.SalesGST, 2)</p>
+        @if(Model.Sales.Discount == 0)
+        {
+            <p>Total Bill Amount: @Math.Round((decimal)Model.Sales.Total)</p>
+        }
+        @if(Model.Sales.Discount > 0)
+        {
+            var discountAmount = Model.Sales.Total * (Model.Sales.Discount / 100.0);
+            discountAmount = Model.Sales.Total - discountAmount;
+            <p>Discount : @Model.Sales.Discount %</p>
+            <p><b>Invoice Amount: @Math.Round((decimal)discountAmount)</b></p>
+        }
+    </div>
+
+    <script>
+        window.onload = function () {
+            document.title = '@Model.Sales.GenerateInvoiceNumber()';
+            window.print();
+            window.onafterprint = function () {
+                window.close();
+            };
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+﻿.custom-table {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+    .custom-table th, .custom-table td {
+        transition: background-color 0.3s ease;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+
+.custom-btn {
+    background: linear-gradient(to right, #28a745, #218838);
+    border: none;
+    color: white;
+    transition: background 0.3s ease;
+}
+
+    .custom-btn:hover {
+        background: linear-gradient(to right, #218838, #1e7e34);
+    }

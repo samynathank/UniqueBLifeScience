@@ -1,0 +1,268 @@
+﻿@model UniqueBLifeScience.Models.StockFormViewModel
+@{
+    ViewData["Title"] = "EditStock";
+    var products = ViewBag.Products as List<UniqueBLifeScience.Models.Products> ?? new List<UniqueBLifeScience.Models.Products>();
+    var existingPurchaseBill = ViewBag.ExistingPurchaseBill as string;
+}
+
+<h1>Edit Stock</h1>
+
+<form asp-action="EditStock" method="post" enctype="multipart/form-data">
+    <input type="hidden" asp-for="StockID" value="@Model.StockID" />
+    <div class="form-group">
+        <label asp-for="CompanyName" class="control-label"></label>
+        <input asp-for="CompanyName" class="form-control" />
+        <span asp-validation-for="CompanyName" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="GSTNumber" class="control-label"></label>
+        <input asp-for="GSTNumber" class="form-control" />
+        <span asp-validation-for="GSTNumber" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="PurchaseBill" class="control-label"></label>
+        <input asp-for="PurchaseBill" type="file" class="form-control" />
+        <span asp-validation-for="PurchaseBill" class="text-danger"></span>
+        @if (!string.IsNullOrEmpty(existingPurchaseBill))
+        {
+            <p>Current File: <a href="~/uploads/@existingPurchaseBill" target="_blank">@existingPurchaseBill</a></p>
+        }
+    </div>
+
+    <h2>Stock Sub Entries</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th>HSN Code</th>
+                <th>Batch</th>
+                <th>MRP</th>
+                <th>Rate</th>
+                <th>GST</th>
+                <th>Quantity</th>
+                <th>Manufacturing Date</th>
+                <th>Expiry Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="stockSubTable">
+            @for (int i = 0; i < Model.StockSub.Count; i++)
+            {
+
+                int j = 0;
+                if (Model.StockSub.Count == i)
+                {
+                    j = i + 1;
+                }
+                <tr>
+                    <td>
+                        <select name="StockSub[@i].ProductName" class="form-control product-select" onchange="fetchProductDetails(this, @i)">
+                            <option value="">Select Product</option>
+                            @foreach (var product in products)
+                            {
+                                if (product.ProductID == Model.StockSub[i].ProductID){
+                                    <option value="@product.ProductName#@product.ProductID" selected>@product.ProductName#@product.Batch</option>
+                                }
+                                else
+                                {
+                                    <option value="@product.ProductName#@product.ProductID">@product.ProductName#@product.Batch</option>
+                                }
+                            }
+                        </select>
+                    </td>
+                    <input type="hidden" name="StockSub[@i].ProductID" class="form-control" value="@Model.StockSub[i].ProductID" />
+                    <td><input name="StockSub[@i].HSNCode" class="form-control" value="@Model.StockSub[i].HSNCode" /></td>
+                    <td><input name="StockSub[@i].Batch" class="form-control" value="@Model.StockSub[i].Batch"  /></td>
+                    <td><input name="StockSub[@i].MRP" class="form-control" value="@Model.StockSub[i].MRP" /></td>
+                    <td><input name="StockSub[@i].Rate" class="form-control" value="@Model.StockSub[i].Rate" oninput="updateTotals()" /></td>
+                    <td><input name="StockSub[@i].GST" class="form-control" value="@Model.StockSub[i].GST" oninput="updateTotals()" /></td>
+                    <td><input name="StockSub[@i].Quantity" class="form-control" value="@Model.StockSub[i].Quantity" oninput="updateTotals()" /></td>
+                    <td><input name="StockSub[@i].ManufacturingDate" type="date" class="form-control" value="@Model.StockSub[i].ManufacturingDate.ToString("yyyy-MM-dd")" /></td>
+                    <td><input name="StockSub[@i].ExpiryDate" type="date" class="form-control" value="@Model.StockSub[i].ExpiryDate.ToString("yyyy-MM-dd")" /></td>
+                    <input type="hidden" name="StockSub[@i].Packing" class="form-control" value="@Model.StockSub[i].Packing" />
+                    <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+                </tr>
+                if(j>i){
+                <tr id="placeholderRow">
+                    <td>
+                            <select name="StockSub[@j].ProductName" class="form-control product-select" onchange="fetchProductDetails(this, @j)">
+                            <option value="">Select Product</option>
+                            @foreach (var product in products)
+                            {
+                                    <option value="@product.ProductName#@product.ProductID">@product.ProductName#@product.Batch</option>
+                                }
+                        </select>
+                    </td>
+                    <input type="hidden" name="StockSub[@j].ProductID" class="form-control" />
+                        <td><input name="StockSub[@j].HSNCode" class="form-control" /></td>
+                        <td><input name="StockSub[@j].Batch" class="form-control" /></td>
+                        <td><input name="StockSub[@j].MRP" class="form-control"  /></td>
+                        <td><input name="StockSub[@j].Rate" class="form-control" oninput="updateTotals()" /></td>
+                    <td><input name="StockSub[@j].GST" class="form-control" oninput="updateTotals()" /></td>
+                    <td><input name="StockSub[@j].Quantity" class="form-control" oninput="updateTotals()" /></td>
+                    <td><input name="StockSub[@j].ManufacturingDate" type="date" class="form-control" /></td>
+                    <td><input name="StockSub[@j].ExpiryDate" type="date" class="form-control" /></td>
+                        <input type="hidden" name="StockSub[@j].Packing" class="form-control" />
+                    <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+                </tr>
+                }
+            }
+        </tbody>
+    </table>
+    <button type="button" class="btn btn-primary" onclick="addRow()">Add Stock Sub</button>
+    <br /><br />
+    <div class="form-group">
+        <label>Packing GST</label>
+        <input id="PackingGST" name="PackingGST" class="form-control" readonly value="@Model.PackingGST" />
+    </div>
+    <div class="form-group">
+        <label>Total</label>
+        <input id="Total" name="Total" class="form-control" readonly value="@Model.Total" />
+    </div>
+    <button type="submit" class="btn btn-success">Save</button>
+    <a href="@Url.Action("Stocks", "Home")" class="btn btn-secondary">Back to Stocks</a>
+
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.product-select').select2();
+        });
+
+        let rowIndex = @Model.StockSub.Count;
+        document.addEventListener('DOMContentLoaded', (event) => {
+            setDefaultDates();
+        });
+
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]').forEach((input) => {
+                if (!input.value) {
+                    input.value = today;
+                }
+            });
+        }
+        function addRow() {
+            const table = document.getElementById('stockSubTable');
+            const newRow = table.insertRow();
+            const today = new Date().toISOString().split('T')[0];
+            newRow.innerHTML = `
+                        <td>
+                                    <select name="StockSub[${rowIndex}].ProductName" class="form-control product-select" onchange="fetchProductDetails(this, ${rowIndex})">
+                                <option value="">Select Product</option>
+        @foreach (var product in products)
+        {
+                                    <option value="@product.ProductName#@product.ProductID">@product.ProductName#@product.Batch</option>
+        }
+                            </select>
+                        </td>
+                        <input type="hidden" name="StockSub[${rowIndex}].ProductID" class="form-control" />
+                                <td><input name="StockSub[${rowIndex}].HSNCode" class="form-control" /></td>
+                                <td><input name="StockSub[${rowIndex}].Batch" class="form-control" /></td>
+                                <td><input name="StockSub[${rowIndex}].MRP" class="form-control" /></td>
+                                <td><input name="StockSub[${rowIndex}].Rate" class="form-control" oninput="updateTotals()" /></td>
+                        <td><input name="StockSub[${rowIndex}].GST" class="form-control" oninput="updateTotals()" /></td>
+                        <td><input name="StockSub[${rowIndex}].Quantity" class="form-control" oninput="updateTotals()" /></td>
+                                <td><input name="StockSub[${rowIndex}].ManufacturingDate" type="date" class="form-control" value="${today}" /></td>
+                                <td><input name="StockSub[${rowIndex}].ExpiryDate" type="date" class="form-control" value="${today}" /></td>
+                                <input type="hidden" name="StockSub[${rowIndex}].Packing" class="form-control" />
+                                <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+                    `;
+            rowIndex++;
+            updateTotals();
+        }
+
+        function insertSubRow(index) {
+            const table = document.getElementById('stockSubTable');
+            const today = new Date().toISOString().split('T')[0];
+            const newRow = table.insertRow(index + 1);
+            newRow.innerHTML = `
+                                <td>
+                                            <select name="StockSub[${rowIndex}].ProductName" class="form-control product-select" onchange="fetchProductDetails(this, ${rowIndex})">
+                                        <option value="">Select Product</option>
+        @foreach (var product in products)
+        {
+                                                    <option value="@product.ProductName#@product.ProductID">@product.ProductName#@product.Batch</option>
+        }
+                                    </select>
+                                </td>
+                                <input type="hidden" name="StockSub[${rowIndex}].ProductID" class="form-control" />
+                                <td><input name="StockSub[${rowIndex}].HSNCode" class="form-control" /></td>
+                                <td><input name="StockSub[${rowIndex}].Batch" class="form-control" /></td>
+                                <td><input name="StockSub[${rowIndex}].MRP" class="form-control" /></td>
+                                <td><input name="StockSub[${rowIndex}].Rate" class="form-control" oninput="updateTotals()" /></td>
+                                <td><input name="StockSub[${rowIndex}].GST" class="form-control" oninput="updateTotals()" /></td>
+                                <td><input name="StockSub[${rowIndex}].Quantity" class="form-control" oninput="updateTotals()" /></td>
+                                <td><input name="StockSub[${rowIndex}].ManufacturingDate" type="date" class="form-control" value="${today}"/></td>
+                                <td><input name="StockSub[${rowIndex}].ExpiryDate" type="date" class="form-control" value="${today}" /></td>
+                                <input type="hidden" name="StockSub[${rowIndex}].Packing" class="form-control" />
+                                <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+                                <td><button type="button" class="btn btn-primary" onclick="insertSubRow(${rowIndex})">Insert Sub</button></td> <!-- New cell with button -->
+                            `;
+            rowIndex++;
+            updateTotals();
+        }
+
+        function removeRow(button) {
+            const row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            updateTotals();
+        }
+
+        function fetchProductDetails(select, index) {
+            const value = select.value;
+            if (value) {
+                const [productName, productID] = value.split('#');
+                if (productID) {
+                    fetch(`/Home/GetProductDetails?productID=${productID}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data) {
+                                document.querySelector(`input[name="StockSub[${index}].ProductID"]`).value = data.productID;
+                                document.querySelector(`input[name="StockSub[${index}].HSNCode"]`).value = data.hsnCode;
+                                document.querySelector(`input[name="StockSub[${index}].Batch"]`).value = data.batch;
+                                document.querySelector(`input[name="StockSub[${index}].MRP"]`).value = data.mrp;
+                                document.querySelector(`input[name="StockSub[${index}].Rate"]`).value = data.rate;
+                                document.querySelector(`input[name="StockSub[${index}].GST"]`).value = data.gst;
+                                document.querySelector(`input[name="StockSub[${index}].Packing"]`).value = data.packing;
+                                updateTotals();
+                            } else {
+                                console.error('Product details not found');
+                            }
+                        })
+                        .catch(error => console.error('Error fetching product details:', error));
+                }
+            }
+        }
+
+        function updateTotals() {
+            let totalGST = 0;
+            let totalRate = 0;
+
+            document.querySelectorAll('input[name^="StockSub"][name$=".Rate"]').forEach((input, index) => {
+                var productPrice = parseFloat(input.value) || 0;
+                var gstInput = document.querySelector(`input[name="StockSub[${index}].GST"]`);
+                var gstPercentage = parseFloat(gstInput.value) || 0;
+                var quantityInput = document.querySelector(`input[name="StockSub[${index}].Quantity"]`);
+                var quantity = parseFloat(quantityInput.value) || 1; // Default to 1 if quantity is not provided
+
+                var totalProductPrice = productPrice * quantity;
+                var gstAmount = (totalProductPrice * gstPercentage) / 100;
+
+                totalGST += gstAmount;
+                totalRate += totalProductPrice;
+            });
+
+            let totalRateWithGST = totalRate + totalGST;
+            let totalRateWithGSTInt = Math.round(totalRateWithGST);
+
+            document.getElementById('PackingGST').value = totalGST.toFixed(1);
+            document.getElementById('Total').value = totalRateWithGSTInt;
+        }
+    </script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery.validate/1.19.1/jquery.validate.min.js"></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery.validate.unobtrusive/3.2.11/jquery.validate.unobtrusive.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+}
