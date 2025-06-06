@@ -170,6 +170,7 @@
                                 <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
                     `;
             rowIndex++;
+            $('.product-select').select2();
             updateTotals();
         }
 
@@ -201,6 +202,7 @@
                                 <td><button type="button" class="btn btn-primary" onclick="insertSubRow(${rowIndex})">Insert Sub</button></td> <!-- New cell with button -->
                             `;
             rowIndex++;
+            $('.product-select').select2();
             updateTotals();
         }
 

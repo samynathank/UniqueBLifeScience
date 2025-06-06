@@ -133,7 +133,7 @@
             }
         </tbody>
     </table>
-    <button type="button" class="btn btn-primary" onclick="addRow()">Add Stock Sub</button>
+    <button type="button" class="btn btn-primary" onclick="addRow()">Add Sales Sub</button>
     <br /><br />
     <div class="form-group">
         <label asp-for="SalesGST" class="control-label"></label>
@@ -208,7 +208,7 @@
                                         <td><input name="SalesSub[${rowIndex}].Rate" class="form-control" oninput="updateTotals()" /></td>
                                 <td><input name="SalesSub[${rowIndex}].GST" class="form-control" oninput="updateTotals()" /></td>
                         <td><input name="SalesSub[${rowIndex}].Quantity" class="form-control" oninput="updateTotals()" /></td>
-                        <td><input name="SalesSub[${rowIndex}].SalesDate" type="date" class="form-control" value="${today}" /></td>
+                                <td><input name="SalesSub[${rowIndex}].SalesDate" type="date" class="form-control" value="${today}" /></td>
                         <td><input name="SalesSub[${rowIndex}].ExpiryDate" type="date" class="form-control" value="${today}" /></td>
                                 <input type="hidden" name="SalesSub[${rowIndex}].ProductID" class="form-control" />
                                 <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
@@ -242,7 +242,7 @@
                                                 <td><input name="SalesSub[${rowIndex}].Rate" class="form-control" oninput="updateTotals()" /></td>
                                         <td><input name="SalesSub[${rowIndex}].GST" class="form-control" oninput="updateTotals()" /></td>
                                         <td><input name="SalesSub[${rowIndex}].Quantity" class="form-control" oninput="updateTotals()" /></td>
-                                                <td><input name="SalesSub[${rowIndex}].ManufacturingDate" type="date" value="${today}" class="form-control" /></td>
+                                                        <td><input name="SalesSub[${rowIndex}].SalesDate" type="date" value="${today}" class="form-control" /></td>
                                                 <td><input name="SalesSub[${rowIndex}].ExpiryDate" type="date" value="${today}" class="form-control" /></td>
                                         <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
                                                 <input type="hidden" name="SalesSub[${rowIndex}].Packing" class="form-control" />
@@ -300,6 +300,8 @@
                                 document.querySelector(`input[name="SalesSub[${index}].Rate"]`).value = data.rate;
                                 document.querySelector(`input[name="SalesSub[${index}].GST"]`).value = data.gst;
                                 document.querySelector(`input[name="SalesSub[${index}].Packing"]`).value = data.packing;
+                                document.querySelector(`input[name="SalesSub[${index}].SalesDate"]`).value = new Date(data.manufacturingDate).toISOString().split('T')[0];
+                                document.querySelector(`input[name="SalesSub[${index}].ExpiryDate"]`).value = new Date(data.expiryDate).toISOString().split('T')[0];
 
                                 // Fetch the product quantity and set it as the value and max for the quantity input
                                 fetch(`/Home/GetProductQuantity?productID=${productID}`)

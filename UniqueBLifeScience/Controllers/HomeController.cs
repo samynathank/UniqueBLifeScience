@@ -370,7 +370,15 @@ namespace UniqueBLifeScience.Controllers
                     p.MRP,
                     p.Rate,
                     p.GST,
-                    p.Packing
+                    p.Packing,
+                    ManufacturingDate = _context.StockSub
+            .Where(s => s.ProductID == p.ProductID)
+            .Select(s => s.ManufacturingDate)
+            .FirstOrDefault(),
+                    ExpiryDate = _context.StockSub
+            .Where(s => s.ProductID == p.ProductID)
+            .Select(s => s.ExpiryDate)
+            .FirstOrDefault()
                 })
                 .FirstOrDefault();
 

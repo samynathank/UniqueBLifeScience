@@ -35,12 +35,15 @@
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Products">Products</a>
                             </li>
                         }
-                        @if (HttpContextAccessor.HttpContext?.Session?.GetString("UserLevel") == "Admin")
+                        @if (HttpContextAccessor.HttpContext?.Session?.GetString("UserLevel") == "Admin" || HttpContextAccessor.HttpContext?.Session?.GetString("UserLevel") == "Normal")
                         {
 
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Customers">Customers</a>
                             </li>
+                        }
+                        @if (HttpContextAccessor.HttpContext?.Session?.GetString("UserLevel") == "Admin")
+                        {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Stocks">Stocks</a>
                             </li>
